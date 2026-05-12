@@ -16,11 +16,13 @@ class FacebookPage extends Model
         'category',
         'is_active',
         'webhook_data',
+        'auto_reply_enabled',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'webhook_data' => 'array',
+        'auto_reply_enabled' => 'boolean',
     ];
 
     public function facebookAccount(): BelongsTo

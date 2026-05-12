@@ -24,6 +24,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'openai_api_key',
+        'whatsapp_api_key',
+        'whatsapp_phone_number_id',
     ];
 
     /**

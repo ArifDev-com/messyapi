@@ -369,18 +369,12 @@ class FacebookController extends Controller
             $messageText = $event['message']['text'] ?? '';
             $messageId = $event['message']['mid'];
 
-            Log::info('Customer message received', [
-                'customer_id' => $senderId,
-                'page_id' => $recipientId,
-                'message' => $messageText
-            ]);
-
             // Get or create customer
             $customer = $this->getOrCreateCustomer($senderId, $event, $pageId);
-            // Send reply
+
+            // Send reply only if both page and customer auto reply are enabled
             $page = FacebookPage::where('page_id', $recipientId)->first();
-            if ($page && $senderId === '35132722253038751') {
-                Log::info('Reply message', [$page, $senderId, $messageText]);
+            if ($page && $page->auto_reply_enabled && $customer && $customer->auto_reply_enabled) {
                 $this->sendMessage($page, $senderId);
             }
         }
@@ -403,8 +397,8 @@ class FacebookController extends Controller
             'message_id' => $messageId,
             'sender_id' => $isEcho ? $senderId : $senderId,
             'recipient_id' => $isEcho ? $recipientId : $recipientId,
-            'message_text' => $messageText,
-            'attachments' => isset($event['message']['attachments']) ? json_encode($event['message']['attachments']) : null,
+            'message_text' => $messageText ?? '',
+            'attachments' => $event['message']['attachments'] ?? null,
             'is_echo' => $isEcho,
             'sent_at' => now()->createFromTimestampMs($timestamp),
         ]);
@@ -478,47 +472,171 @@ class FacebookController extends Controller
     /**
      * Send message via Facebook API
      */
-    protected function sendMessage(FacebookPage $page, string $recipientId, ?string $messageText = null)
+    static public function sendMessageWithAttachments(FacebookPage $page, string $recipientId, ?string $messageText = null, array $images = [])
     {
         try {
-            // Use default message if none provided
-            $message = $messageText ?? "Thank you for your message! How can I help you today?";
-            $url = "https://graph.facebook.com/v18.0/{$page->page_id}/messages";
-
-            $postData = [
-                'recipient' => json_encode(['id' => $recipientId]),
-                'message' => json_encode(['text' => $message]),
-                'access_token' => $page->access_token
-            ];
-
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-
-            // SSL handling
-//            if (app()->environment('local')) {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-//            } else {
-//                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-//                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-//            }
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode !== 200) {
-                Log::error('Failed to send message', [
-                    'http_code' => $httpCode,
-                    'response' => $response
-                ]);
+            if (empty($images)) {
+                return self::sendMessage($page, $recipientId, $messageText);
             }
 
+            $url = "https://graph.facebook.com/v18.0/{$page->page_id}/messages";
+            $results = [];
+
+            // Send text message first (if provided) - only once
+            if ($messageText) {
+                $results[] = self::sendTextMessage($page, $recipientId, $messageText);
+            }
+
+            // Send each image as separate message with timeout
+            foreach ($images as $image) {
+                // Get the image URL directly without saving to disk
+                $imageUrl = self::getImageUrl($image);
+                if (!$imageUrl) {
+                    Log::warning('Invalid image, skipping', ['image' => $image]);
+                    continue;
+                }
+
+                $result = self::sendImageMessage($page, $recipientId, $imageUrl);
+                $results[] = $result;
+
+                // Small delay to avoid rate limiting
+                usleep(500000); // 0.5 seconds
+            }
+
+            return $results;
+
         } catch (\Exception $e) {
-            Log::error('Failed to send message: ' . $e->getMessage());
+            Log::error('Failed to send message with attachments: ' . $e->getMessage());
+            return null;
         }
+    }
+
+// Send text message
+    static protected function sendTextMessage(FacebookPage $page, string $recipientId, string $messageText)
+    {
+        $url = "https://graph.facebook.com/v18.0/{$page->page_id}/messages";
+
+        $postData = [
+            'recipient' => json_encode(['id' => $recipientId]),
+            'message' => json_encode(['text' => $messageText]),
+            'access_token' => $page->access_token
+        ];
+
+        return self::makeCurlRequest($url, $postData);
+    }
+
+// Send image message
+    static protected function sendImageMessage(FacebookPage $page, string $recipientId, string $imageUrl)
+    {
+        $url = "https://graph.facebook.com/v18.0/{$page->page_id}/messages";
+
+        $postData = [
+            'recipient' => json_encode(['id' => $recipientId]),
+            'message' => json_encode([
+                'attachment' => [
+                    'type' => 'image',
+                    'payload' => ['url' => $imageUrl]
+                ]
+            ]),
+            'access_token' => $page->access_token
+        ];
+
+        return self::makeCurlRequest($url, $postData);
+    }
+
+// Centralized cURL request with timeout
+    static protected function makeCurlRequest($url, $postData)
+    {
+        $ch = curl_init($url);
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($postData),
+            CURLOPT_SSL_VERIFYPEER => false, // Only for local
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_TIMEOUT => 10, // 10 second timeout
+            CURLOPT_CONNECTTIMEOUT => 5, // 5 second connection timeout
+            CURLOPT_HEADER => false,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            Log::error('cURL Error: ' . $curlError);
+            return null;
+        }
+
+        if ($httpCode !== 200) {
+            Log::error('Facebook API Error', [
+                'http_code' => $httpCode,
+                'response' => $response
+            ]);
+            return null;
+        }
+        Log::info('Facebook API Response', [$response]);
+
+        return json_decode($response, true);
+    }
+
+    static protected function getImageUrl($image)
+    {
+        // If it's already a public URL
+        if (filter_var($image, FILTER_VALIDATE_URL)) {
+            return $image;
+        }
+
+        // If it's an uploaded file, save and return public URL
+        if ($image instanceof \Illuminate\Http\UploadedFile) {
+            // Store in storage/app/public/temp
+            $path = $image->store('temp_images', 'public');
+            return url('storage/' . $path);
+        }
+
+        // If it's a local file path
+        if (is_string($image) && file_exists($image)) {
+            // Copy to public directory
+            $filename = time() . '_' . uniqid() . '.' . pathinfo($image, PATHINFO_EXTENSION);
+            $destination = public_path('storage/temp_images/' . $filename);
+
+            if (!file_exists(public_path('storage/temp_images'))) {
+                mkdir(public_path('storage/temp_images'), 0755, true);
+            }
+
+            copy($image, $destination);
+            return url('storage/temp_images/' . $filename);
+        }
+
+        return null;
+    }
+
+// And make sure to clean up old temporary images
+    static protected function cleanupTempImages()
+    {
+        $tempDir = public_path('storage/temp_images');
+        if (file_exists($tempDir)) {
+            $files = glob($tempDir . '/*');
+            foreach ($files as $file) {
+                if (is_file($file) && time() - filemtime($file) > 3600) {
+                    unlink($file);
+                }
+            }
+        }
+    }
+
+// Keep your existing sendMessage for text only
+    static public function sendMessage(FacebookPage $page, string $recipientId, ?string $messageText = null)
+    {
+        if (!$messageText) {
+            return null;
+        }
+
+        return self::sendTextMessage($page, $recipientId, $messageText);
     }
 
 

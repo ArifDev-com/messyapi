@@ -35,4 +35,8 @@ class FacebookMessage extends Model
     {
         return $this->belongsTo(FacebookPage::class);
     }
+    function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
 }
