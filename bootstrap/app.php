@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             foreach([
-
+                'web.php',
             ] as $f) {
                 Route::middleware('web')
                     ->group(base_path('routes/' . $f));
