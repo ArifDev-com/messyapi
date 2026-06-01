@@ -28,25 +28,40 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="openai_api_key">OpenAI API Key</label>
-                                    <input type="password" class="form-control" id="openai_api_key" name="openai_api_key"
-                                           value="{{ old('openai_api_key', Auth::user()->openai_api_key) }}"
-                                           placeholder="sk-...">
-                                    <small class="form-text text-muted">Required for AI-powered responses</small>
+                                    <label for="openai_api_url">AI Vendor API URL</label>
+                                    <input type="text" class="form-control" id="openai_api_url" name="openai_api_url"
+                                           value="{{ old('openai_api_url', $settings->where('key', 'openai_api_url')->first()?->value) }}"
+                                           placeholder="https://api.openrouter.com/v1">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="whatsapp_api_key">WhatsApp API Key</label>
-                                    <input type="password" class="form-control" id="whatsapp_api_key" name="whatsapp_api_key"
-                                           value="{{ old('whatsapp_api_key', Auth::user()->whatsapp_api_key) }}"
-                                           placeholder="Your WhatsApp API Key">
-                                    <small class="form-text text-muted">Required for WhatsApp integration</small>
+                                    <label for="openai_api_key">AI Vendor API Key</label>
+                                    <input type="text" class="form-control" id="openai_api_key" name="openai_api_key"
+                                           value="{{ old('openai_api_key', $settings->where('key', 'openai_api_key')->first()?->value) }}"
+                                           placeholder="sk-...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="openai_api_model">Model</label>
+                                    <input type="text" class="form-control" id="openai_api_model" name="openai_api_model"
+                                           value="{{ old('openai_api_model', $settings->where('key', 'openai_api_model')->first()?->value) }}"
+                                           placeholder="deepseek">
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="whatsapp_api_key">WhatsApp API Key</label>
+                                    <input type="text" class="form-control" id="whatsapp_api_key" name="whatsapp_api_key"
+                                           value="{{ old('whatsapp_api_key', Auth::user()->whatsapp_api_key) }}"
+                                           placeholder="Your WhatsApp API Key">
+                                    <small class="form-text text-muted">Required for WhatsApp integration</small>
+                                </div>
+                            </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="whatsapp_phone_number_id">WhatsApp Phone Number ID</label>

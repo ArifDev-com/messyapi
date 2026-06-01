@@ -73,7 +73,7 @@ class MessengerController extends Controller
         }
 
         // Send message via Facebook API
-        $facebookController = new FacebookController();
+        $facebookController = app(\App\Services\FacebookService::class);
         $attachments = null;
 
         if ($request->hasFile('images')) {
@@ -83,17 +83,17 @@ class MessengerController extends Controller
         }
 
         // Save the message in database
-//        FacebookMessage::create([
-//            'facebook_page_id' => $page->id,
-//            'customer_id' => $customer->id,
-//            'message_id' => uniqid(),
-//            'sender_id' => $page->page_id,
-//            'recipient_id' => $customer->platform_user_id,
-//            'message_text' => $request->message ?: '',
-//            'attachments' => $attachments,
-//            'is_echo' => true,
-//            'sent_at' => now(),
-//        ]);
+        FacebookMessage::create([
+            'facebook_page_id' => $page->id,
+            'customer_id' => $customer->id,
+            'message_id' => 0,
+            'sender_id' => $page->page_id,
+            'recipient_id' => $customer->platform_user_id,
+            'message_text' => $request->message ?: '',
+            'attachments' => $attachments,
+            'is_echo' => true,
+            'sent_at' => now(),
+        ]);
 
         return response()->json(['success' => true]);
     }
@@ -101,11 +101,6 @@ class MessengerController extends Controller
     public function getMessages(Customer $customer, Request $request)
     {
         // Ensure the customer belongs to the authenticated user's Facebook account
-        if (!$customer->messages()->whereHas('facebookPage', function($query) {
-            $query->where('facebook_account_id', Auth::user()->facebookAccount->id ?? null);
-        })->exists()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
 
         $messages = FacebookMessage::where(function ($q) use ($request, $customer) {
             $q->where('customer_id', $customer->id)

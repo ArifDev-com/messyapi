@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacebookPage;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +19,9 @@ class SettingsController extends Controller
 
         $pages = $facebookAccount->pages;
 
-        return view('settings.index', compact('pages'));
+        return view('settings.index', [
+            'pages' => $pages, 'settings' => Setting::get(),
+        ]);
     }
 
     public function update(Request $request)
@@ -27,18 +30,25 @@ class SettingsController extends Controller
             'openai_api_key' => 'nullable|string',
             'whatsapp_api_key' => 'nullable|string',
             'whatsapp_phone_number_id' => 'nullable|string',
+            'openai_api_url' => 'nullable|string',
+            'openai_api_model' => 'nullable|string',
         ]);
 
-        $user = Auth::user();
-        $user->update([
+        foreach([
             'openai_api_key' => $request->openai_api_key,
+            'openai_api_url' => $request->openai_api_url,
+            'openai_api_model' => $request->openai_api_model,
             'whatsapp_api_key' => $request->whatsapp_api_key,
             'whatsapp_phone_number_id' => $request->whatsapp_phone_number_id,
-        ]);
+        ] as $k => $v) {
+            Setting::where('key', $k)->delete();
+            Setting::create([
+                'key' => $k, 'value' => $v
+            ]);
+        }
 
         return back()->with('success', 'Settings updated successfully.');
     }
-
     public function toggleAutoReply(FacebookPage $page, Request $request)
     {
         if ($page->facebookAccount->user_id !== Auth::id()) {
