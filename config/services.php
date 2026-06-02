@@ -20,4 +20,6 @@ return [
         'webhook_verify_token' => env('FACEBOOK_WEBHOOK_VERIFY_TOKEN'),
     ],
 
+    'erp_link' => env('ERP_LINK'),
+    'erp_api_key' => env('ERP_API_KEY'),
 ];

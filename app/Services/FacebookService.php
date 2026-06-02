@@ -84,9 +84,11 @@ class FacebookService {
         }
         if (!$isEcho) {
             if ($page?->auto_reply_enabled && $customer?->auto_reply_enabled) {
-                $ai = app(AIService::class);
-                $replyText = $ai->generateMessage($page, $senderId, $message);
-                $this->sendMessage($page, $senderId, $replyText);
+                dispatch(function () use ($message, $page, $senderId) {
+                    $ai = app(AIService::class);
+                    $replyText = $ai->generateMessage($page, $senderId, $message);
+                    FacebookService::sendMessage($page, $senderId, $replyText);
+                });
             }
         }
     }

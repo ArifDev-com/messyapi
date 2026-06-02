@@ -60,3 +60,10 @@ function numberToWords($number)
     }
     return implode(' ', $words);
 }
+function erpClient()
+{
+    return Http::timeout(30)
+            ->retry(2, 300)
+            ->withHeader('Authorization', 'Bearer ' . config('services.erp_api_key'))
+            ->baseUrl(config('services.erp_link'));
+}
