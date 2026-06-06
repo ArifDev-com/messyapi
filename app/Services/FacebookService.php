@@ -36,7 +36,7 @@ class FacebookService {
             $messageId = $event['message']['mid'];
 
             // Get or create customer
-            $customer = Customer::getOrCreateCustomer($senderId, $event, $pageId);
+            $customer = Customer::getOrCreateCustomerFacebook($senderId, $pageId);
 
             // Send reply only if both page and customer auto reply are enabled
             $page = FacebookPage::where('page_id', $recipientId)->first();

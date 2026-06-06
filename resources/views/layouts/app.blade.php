@@ -24,7 +24,6 @@
     </head>
     <body>
         @include('layouts.navigation')
-{{--        Show Errors--}}
         @session('error')
         <div class="alert alert-danger">
             {{session('error')}}

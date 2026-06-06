@@ -28,10 +28,23 @@ class Customer extends Model
         return $this->hasMany(FacebookMessage::class);
     }
 
+    static function getOrCreateCustomerWhatsapp(string $senderId): Customer
+    {
+        return Customer::updateOrCreate(
+            [
+                'platform' => 'whatsapp',
+                'platform_user_id' => $senderId,
+            ], [
+                'name' => $senderId,
+                'profile_data' => null,
+                'last_message_at' => now(),
+            ]
+        );
+    }
     /**
      * Get or create customer from Facebook sender
      */
-    static function getOrCreateCustomer(string $senderId, array $event, $pageId): Customer
+    static function getOrCreateCustomerFacebook(string $senderId, $pageId): Customer
     {
         // Try to get customer info from Facebook
         $customerInfo = null;

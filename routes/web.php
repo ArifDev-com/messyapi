@@ -1,9 +1,9 @@
 <?php
 
-
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\MessengerController;
+use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -35,12 +35,16 @@ Route::middleware('auth')->group(function () {
     });
 
     // Messenger routes
-    Route::prefix('messenger')->name('messenger.')->group(function () {
+    Route::prefix('messenger-facebook')->name('messenger.')->group(function () {
         Route::get('/', [MessengerController::class, 'index'])->name('index');
         Route::get('/customer/{customer}', [MessengerController::class, 'show'])->name('show');
         Route::post('/customer/{customer}/send-message', [MessengerController::class, 'sendMessage'])->name('send-message');
         Route::get('/customer/{customer}/messages', [MessengerController::class, 'getMessages'])->name('get-messages');
         Route::post('/customer/{customer}/toggle-auto-reply', [MessengerController::class, 'toggleAutoReply'])->name('toggle-customer-auto-reply');
+    });
+
+    Route::prefix('messenger-whatsapp')->name('messenger.whatsapp.')->group(function () {
+       Route::get('/', [WhatsappController::class, 'index'])->name('index');
     });
 
     // API routes for messenger

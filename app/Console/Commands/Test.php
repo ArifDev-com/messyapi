@@ -28,6 +28,9 @@ class Test extends Command
      */
     public function handle()
     {
+        dump(
+            erpClient()->post('/api/order', json_decode('{"customer":"azim","phone":"01924333284","note":"","teams":[{"title":"bd team","category":"Polo","category_fabric":"01 INTERLOCK PP","half_sleeve_qty":"0","full_sleeve_qty":"1","pant":"Cargo","pant_fabric":"09 TRICOT FABRIC","pant_quantity":"1","neck":"02 V NECK","cuff":"HEM","logo_notes":[],"font_notes":[],"detail_image":"","details":[{"title":"azim","number":"1","size":"M","sleeve":"Full","pant":"No","note":""}],"logo_images":[],"font_files":[]}]}', true))->json()
+        );
 //        $key = Setting::where('key', 'openai_api_key')->first()?->value;
 //        $url = Setting::where('key', 'openai_api_url')->first()?->value;
 //        $model = Setting::where('key', 'openai_api_model')->first()?->value;

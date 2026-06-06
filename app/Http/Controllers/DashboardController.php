@@ -7,11 +7,14 @@ use App\Models\FacebookPage;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+//        $all = app(WebClient::class)->session('main')->messages();
+//        var_dump(($all));exit;
         // Get message statistics
         $totalMessages = FacebookMessage::count();
         $totalCustomers = Customer::count();

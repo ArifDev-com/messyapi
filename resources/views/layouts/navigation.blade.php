@@ -25,6 +25,11 @@
                      </a>
                  </li>
                  @endif
+                 <li class="nav-item {{ request()->routeIs('messenger.whatsapp.*') ? 'active' : '' }}">
+                     <a class="nav-link" href="{{ route('messenger.whatsapp.index') }}">
+                         <i class="fas fa-comments"></i> Whatsapp
+                     </a>
+                 </li>
              </ul>
 
             @auth

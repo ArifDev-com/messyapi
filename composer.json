@@ -9,12 +9,16 @@
         "php": "^8.2",
         "doctrine/dbal": "^4.4",
         "facebook/graph-sdk": "^5.1",
+        "kstmostofa/laravel-whatsapp": "@dev",
         "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "livewire/flux": "^2.14",
+        "livewire/livewire": "^4.3",
         "netflie/whatsapp-cloud-api": "^3.1"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "^4.1",
+        "barryvdh/laravel-debugbar": "*",
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.3",
         "laravel/pail": "^1.2.2",
@@ -90,5 +94,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/kstmostofa/laravel-whatsapp"
+        }
+    ]
 }
