@@ -6,14 +6,14 @@ use App\Models\FacebookPage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use App\Models\Setting;
+use App\Models\Customer;
+use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Log;
 
 class AIService {
     protected $api = null;
     protected $url = null;
     protected $model = null;
-    protected $orderJsonDivider = '### Order Json Divider:';
-    protected $messageDivider = '### Message Divider:';
     function __construct()
     {
         $key = Setting::where('key', 'openai_api_key')->first()?->value;
@@ -28,7 +28,67 @@ class AIService {
             ->timeout(60 * 3);
         }
     }
-    function generateMessage(FacebookPage $page, string $senderId, \App\Models\FacebookMessage $message)
+    function generateFacebookMessage(FacebookPage $page, string $senderId, \App\Models\FacebookMessage $message)
+    {
+        $messages = FacebookMessage::where('facebook_page_id', $page->id)
+            ->where(fn($q) => $q->where('sender_id', $senderId)->orWhere('recipient_id', $senderId))
+            ->get()
+            ->map(function ($item) {
+                $attachment = "";
+                if($item->attachments && is_array($item->attachments)) {
+                    $attachment .= "Attachments:";
+                    foreach ($item->attachments as $att) {
+                        $attachment .= "\n" . ($att['type'] ?? 'File') . ": ". ($att['payload']['url'] ?? url('/'));
+                    }
+                }
+                $mess = ($item->reply_text ?: $item->message_text) . "\n" . $attachment;
+                $mess = trim($mess);
+                if($item->is_echo) {
+                    return [
+                        'role' => 'system',
+                        'content' => $mess,
+                    ];
+                }else{
+                    return [
+                        'role' => 'user',
+                        'content' => $mess,
+                    ];
+                }
+            })
+            ->toArray();
+        return $this->generateMessage($messages);
+    }
+    function generateWhatsappMessage(WaMessage $message, Customer $customer)
+    {
+        $messages = [];
+        $all = WaMessage::where('chat_id', $message->chat_id)
+            ->where('session_id', $message->session_id)
+            ->latest('id')->limit(50)
+            ->get();
+        $all = $all->sortBy('id');
+        foreach ($all as $message) {
+            $attachment = "";
+            if($message->media_path) {
+                $attachment .= "Attachment: " . url('storage/' . $message->media_path);
+            }
+            $mess = ($message->body) . "\n" . $attachment;
+            $mess = trim($mess);
+
+            if(!str_ends_with($message->to_id, '@c.us')) {
+                $messages[] = [
+                    'role' => 'system',
+                    'content' => $mess,
+                ];
+            }else{
+                $messages[] = [
+                    'role' => 'user',
+                    'content' => $mess,
+                ];
+            }
+        }
+        return $this->generateMessage($messages);
+    }
+    function generateMessage(array $messages)
     {
         if(!$this->api) return null;
         $requestBody = [
@@ -38,35 +98,10 @@ class AIService {
                     'role' => 'system',
                     'content' => $this->systemPrompt(),
                 ],
-                ...(FacebookMessage::where('facebook_page_id', $page->id)
-                    ->where(fn($q) => $q->where('sender_id', $senderId)->orWhere('recipient_id', $senderId))
-                    ->get()
-                    ->map(function ($item) {
-                        $attachment = "";
-                        if($item->attachments && is_array($item->attachments)) {
-                            $attachment .= "Attachments:";
-                            foreach ($item->attachments as $att) {
-                                $attachment .= "\n" . ($att['type'] ?? 'File') . ": ". ($att['payload']['url'] ?? url('/'));
-                            }
-                        }
-                        $mess = ($item->reply_text ?: $item->message_text) . "\n" . $attachment;
-                        $mess = trim($mess);
-                        if($item->is_echo) {
-                            return [
-                                'role' => 'system',
-                                'content' => $mess,
-                            ];
-                        }else{
-                            return [
-                                'role' => 'user',
-                                'content' => $mess,
-                            ];
-                        }
-                    })
-                    ->toArray())
+                ...($messages)
             ]
         ];
-//        Log::info('request body: ', [$requestBody]);
+        Log::info('request body: ', [$requestBody]);
         $body = $this->api->post($this->url, $requestBody)->json();
         $response = $body['choices'][0]['message']['content'] ?? null;
         $response = $this->checkAndFilterMessage($response);

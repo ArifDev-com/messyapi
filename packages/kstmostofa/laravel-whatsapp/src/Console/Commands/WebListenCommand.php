@@ -144,7 +144,6 @@ class WebListenCommand extends Command
     {
         $eventName = null;
         $data = '';
-
         foreach (explode("\n", $raw) as $line) {
             $line = rtrim($line, "\r");
             if ($line === '' || str_starts_with($line, ':')) {
@@ -171,7 +170,6 @@ class WebListenCommand extends Command
     protected function dispatchEvent(string $event, string $json, string $sessionId, array $eventMap, Dispatcher $events): void
     {
         $eventClass = $eventMap[$event] ?? null;
-
         if (! $eventClass || ! class_exists($eventClass)) {
             return;
         }

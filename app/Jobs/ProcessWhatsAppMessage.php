@@ -11,6 +11,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use App\Models\Customer;
+use App\Services\AIService;
 
 class ProcessWhatsAppMessage implements ShouldQueue
 {
@@ -39,17 +40,31 @@ class ProcessWhatsAppMessage implements ShouldQueue
         try {
             $id = $payload['message']['id'];
             $mess = WaMessage::where('wa_message_id', $id)->first();
-            if($payload['message']['hasMedia']) {
+            if ($payload['message']['hasMedia']) {
+                sleep(5);
                 $mess->media_path = $this->downloadMedia($mess);
                 $mess->save();
             }
             $customer = Customer::getOrCreateCustomerWhatsapp($payload['message']['from']);
             $mess->customer_id = $customer->id;
             $mess->save();
-
-            // send ai reply
-//            app(AiS)
-
+            if(!str_contains($mess['type'], 'notification')) {
+                // send ai reply
+                $is_enabled = !\App\Models\Setting::where('key', 'disable_whatsapp')->exists();
+                if ($is_enabled) {
+                    $is_enabled = $customer->auto_reply_enabled;
+                }
+                if ($is_enabled) {
+                    dispatch(function () use ($mess, $customer) {
+                        $ai = app(AIService::class);
+                        $replyText = $ai->generateWhatsappMessage($mess, $customer);
+                        if ($replyText) {
+                            app(WebClient::class)->session('main')->messages()
+                                ->sendText($mess->chat_id, $replyText);
+                        }
+                    });
+                }
+            }
         } catch (\Exception $e) {
             Log::error("Failed to process message: " . $e->getMessage());
 //            $this->fail($e);
@@ -71,14 +86,16 @@ class ProcessWhatsAppMessage implements ShouldQueue
                 $contentType = $response->header('Content-Type');
                 $headers = $response->headers();
 
+                Log::info('headers', $headers);
                 // Extract filename from Content-Disposition header
-                $filename = $message->id . '/' . $this->extractFilenameFromHeaders($headers);
+                $filename = ($this->extractFilenameFromHeaders($headers));
 
                 // If no filename found, generate one from content type
                 if (!$filename) {
-                    $extension = $message->id . '/' . $this->getExtensionFromMime($headers['Content-Type'][0] ?? 'application/octet-stream');
+                    $extension = $this->getExtensionFromMime($headers['Content-Type'][0] ?? 'application/octet-stream');
                     $filename = uniqid() . "." . $extension;
                 }
+                $filename = $message->id . '/' . $filename;
 
                 // Create directory if not exists
                 Storage::disk('public')->makeDirectory(dirname($filename));
@@ -86,6 +103,8 @@ class ProcessWhatsAppMessage implements ShouldQueue
                 Storage::disk('public')->put($filename, $content);
 
                 return $filename;
+            } else {
+                throw new \Exception("Failed to download media: " . $response->body());
             }
         } catch (\Exception $e) {
             Log::error("Media download failed: {$e->getMessage()}");

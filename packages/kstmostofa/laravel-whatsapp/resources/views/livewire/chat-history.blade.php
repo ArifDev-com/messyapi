@@ -97,34 +97,36 @@
         {{-- List --}}
         <div class="flex-1 overflow-y-auto">
             @forelse ($chats as $c)
-                @php($isSelected = $selectedChat === ($c['id'] ?? null))
-                @php($displayName = $c['name'] ?? $c['id'] ?? '?')
-                <button wire:click="open('{{ $c['id'] }}')"
-                        class="w-full text-left px-4 py-3 flex gap-3 transition-colors border-l-2 {{ $isSelected ? 'bg-zinc-50 dark:bg-zinc-800 border-wa-600' : 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50' }}">
-                    {{-- Manual avatar with native lazy-loading + initials fallback.
-                         Flux's <flux:avatar> renders an <img> without loading="lazy",
-                         which causes a thundering herd of requests on long chat lists. --}}
-                    <div class="relative size-9 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-xs font-medium text-zinc-700 dark:text-zinc-200">
-                        <span aria-hidden="true">{{ strtoupper(mb_substr($displayName, 0, 2)) }}</span>
-                        <img src="{{ route('whatsapp.ui.avatar', ['session' => $session, 'contactId' => $c['id']]) }}"
-                             alt=""
-                             loading="lazy"
-                             decoding="async"
-                             class="absolute inset-0 size-full object-cover"
-                             onerror="this.remove()">
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="font-medium text-sm text-zinc-900 dark:text-white truncate">{{ $displayName }}</div>
-                            @if (! empty($c['unreadCount']))
-                                <flux:badge size="sm" color="lime">{{ $c['unreadCount'] }}</flux:badge>
+                @if(str_ends_with($c['id'] ?? '', '@lid'))
+                    @php($isSelected = $selectedChat === ($c['id'] ?? null))
+                    @php($displayName = $c['name'] ?? $c['id'] ?? '?')
+                    <button wire:click="open('{{ $c['id'] }}')"
+                            class="w-full text-left px-4 py-3 flex gap-3 transition-colors border-l-2 {{ $isSelected ? 'bg-zinc-50 dark:bg-zinc-800 border-wa-600' : 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50' }}">
+                        {{-- Manual avatar with native lazy-loading + initials fallback.
+                             Flux's <flux:avatar> renders an <img> without loading="lazy",
+                             which causes a thundering herd of requests on long chat lists. --}}
+                        <div class="relative size-9 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-xs font-medium text-zinc-700 dark:text-zinc-200">
+                            <span aria-hidden="true">{{ strtoupper(mb_substr($displayName, 0, 2)) }}</span>
+                            <img src="{{ route('whatsapp.ui.avatar', ['session' => $session, 'contactId' => $c['id']]) }}"
+                                 alt=""
+                                 loading="lazy"
+                                 decoding="async"
+                                 class="absolute inset-0 size-full object-cover"
+                                 onerror="this.remove()">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="font-medium text-sm text-zinc-900 dark:text-white truncate">{{ $displayName }}</div>
+                                @if (! empty($c['unreadCount']))
+                                    <flux:badge size="sm" color="lime">{{ $c['unreadCount'] }}</flux:badge>
+                                @endif
+                            </div>
+                            @if (! empty($c['lastMessage']['body']))
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{{ \Illuminate\Support\Str::limit($c['lastMessage']['body'], 50) }}</div>
                             @endif
                         </div>
-                        @if (! empty($c['lastMessage']['body']))
-                            <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{{ \Illuminate\Support\Str::limit($c['lastMessage']['body'], 50) }}</div>
-                        @endif
-                    </div>
-                </button>
+                    </button>
+                @endif
             @empty
                 <div class="px-6 py-12 text-center">
                     <flux:icon.chat-bubble-left-right class="size-10 mx-auto text-zinc-300 dark:text-zinc-600" />
@@ -171,6 +173,16 @@
                 <div class="flex-1 min-w-0">
                     <div class="font-semibold text-base text-zinc-900 dark:text-white truncate">{{ $displayName }}</div>
                     <div class="text-xs text-zinc-500 truncate" title="{{ $selectedChat }}">{{ $headerSubtitle }}</div>
+                </div>
+
+                @php($customer = \App\Models\Customer::where('platform_user_id', $selected['id'])->first())
+                <div class="form-check mr-3">
+                    <input class="form-check-input" type="checkbox" id="customerAutoReplyToggle"  @if(!$customer || $customer?->auto_reply_enabled) checked @endif
+                        onchange="updateCustomerAutoReplyStatus('{{ $selected['id'] ?? '' }}', this)"
+                    >
+                    <label class="form-check-label" for="customerAutoReplyToggle">
+                        Auto Reply
+                    </label>
                 </div>
             </div>
 
@@ -428,3 +440,41 @@
         </div>
     </flux:modal>
 </div>
+
+<script>
+    // Handle customer auto reply toggle
+    function updateCustomerAutoReplyStatus (selectedUserId, input) {
+        const enabled = input.checked ;
+        const url = `/messenger-whatsapp/customer/toggle-auto-reply/${selectedUserId}`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                auto_reply_enabled: enabled
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Optional: Show success message
+                console.log('Auto reply updated successfully:', data);
+                // You can add a toast notification here if needed
+            })
+            .catch(error => {
+                // Revert the toggle on error
+                if (inputElement) {
+                    inputElement.checked = !enabled;
+                }
+                alert('Failed to update auto reply setting');
+                console.error('Error:', error);
+            });
+    }
+</script>

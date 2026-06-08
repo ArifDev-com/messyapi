@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('messenger-whatsapp')->name('messenger.whatsapp.')->group(function () {
        Route::get('/', [WhatsappController::class, 'index'])->name('index');
+       Route::post('/customer/toggle-auto-reply/{user_id}', [WhatsappController::class, 'toggleAutoReply'])->name('toggle-customer-auto-reply');
     });
 
     // API routes for messenger

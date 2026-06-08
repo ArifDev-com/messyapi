@@ -193,7 +193,7 @@ $(document).ready(function() {
         }
 
         $.ajax({
-            url: `/messenger/customer/${selectedCustomerId}/send-message`,
+            url: `/messenger-facebook/customer/${selectedCustomerId}/send-message`,
             method: 'POST',
             data: formData,
             processData: false,
@@ -217,7 +217,7 @@ $(document).ready(function() {
         if (!selectedCustomerId) return;
 
         $.ajax({
-            url: `/messenger/customer/${selectedCustomerId}/messages`,
+            url: `/messenger-facebook/customer/${selectedCustomerId}/messages`,
             method: 'GET',
             success: function(messages) {
                 renderMessages(messages);
@@ -247,7 +247,7 @@ $(document).ready(function() {
         isCheckingForNewMessages = true;
 
         $.ajax({
-            url: `/messenger/customer/${selectedCustomerId}/messages?after=${encodeURIComponent(lastMessageTimestamp)}`,
+            url: `/messenger-facebook/customer/${selectedCustomerId}/messages?after=${encodeURIComponent(lastMessageTimestamp)}`,
             method: 'GET',
             success: function(newMessages) {
                 if (newMessages.length > 0) {
@@ -333,7 +333,7 @@ $(document).ready(function() {
 
         // Load page auto reply status (assuming the customer has messages from a page)
         $.ajax({
-            url: `/messenger/customer/${selectedCustomerId}/messages`,
+            url: `/messenger-facebook/customer/${selectedCustomerId}/messages`,
             method: 'GET',
             success: function(messages) {
                 if (messages.length > 0) {
@@ -351,7 +351,7 @@ $(document).ready(function() {
         const enabled = $(this).is(':checked');
 
         $.ajax({
-            url: `/messenger/customer/${selectedCustomerId}/toggle-auto-reply`,
+            url: `/messenger-facebook/customer/${selectedCustomerId}/toggle-auto-reply`,
             method: 'POST',
             data: {
                 auto_reply_enabled: enabled,

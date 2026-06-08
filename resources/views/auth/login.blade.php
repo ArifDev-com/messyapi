@@ -12,6 +12,15 @@
                     <p class="lead -50">Sign in to your account to continue</p>
                 </div>
 
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <div class="card border-0 shadow-lg" style="border-radius: 20px; backdrop-filter: blur(15px); background: rgba(255, 255, 255, 0.95);">
                     <div class="card-body p-5">
                         <div class="text-center mb-4">

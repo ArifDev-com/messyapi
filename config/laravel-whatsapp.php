@@ -48,6 +48,7 @@ return [
 
     'events' => [
         'message' => \Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class,
+        'message_create' => \Kstmostofa\LaravelWhatsApp\Events\MessageCreated::class,
         'status' => \Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate::class,
         'interactive' => \Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied::class,
         'media' => \Kstmostofa\LaravelWhatsApp\Events\MediaReceived::class,
@@ -106,6 +107,7 @@ return [
         ],
 
         'events' => [
+            'message_create' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class,
             'message' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class,
             'ready' => \Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady::class,
             'qr' => \Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated::class,

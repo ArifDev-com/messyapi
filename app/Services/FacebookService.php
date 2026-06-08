@@ -86,7 +86,7 @@ class FacebookService {
             if ($page?->auto_reply_enabled && $customer?->auto_reply_enabled) {
                 dispatch(function () use ($message, $page, $senderId) {
                     $ai = app(AIService::class);
-                    $replyText = $ai->generateMessage($page, $senderId, $message);
+                    $replyText = $ai->generateFacebookMessage($page, $senderId, $message);
                     FacebookService::sendMessage($page, $senderId, $replyText);
                 });
             }

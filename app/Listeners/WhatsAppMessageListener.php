@@ -7,6 +7,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use App\Jobs\ProcessWhatsAppMessage;
 use Illuminate\Support\Facades\Log;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageC;
 
 class WhatsAppMessageListener
 {
