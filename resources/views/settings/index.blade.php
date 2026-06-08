@@ -52,27 +52,6 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="whatsapp_api_key">WhatsApp API Key</label>
-                                    <input type="text" class="form-control" id="whatsapp_api_key" name="whatsapp_api_key"
-                                           value="{{ old('whatsapp_api_key', Auth::user()->whatsapp_api_key) }}"
-                                           placeholder="Your WhatsApp API Key">
-                                    <small class="form-text text-muted">Required for WhatsApp integration</small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="whatsapp_phone_number_id">WhatsApp Phone Number ID</label>
-                                    <input type="text" class="form-control" id="whatsapp_phone_number_id" name="whatsapp_phone_number_id"
-                                           value="{{ old('whatsapp_phone_number_id', Auth::user()->whatsapp_phone_number_id) }}"
-                                           placeholder="Your WhatsApp Phone Number ID">
-                                    <small class="form-text text-muted">Required for WhatsApp messaging</small>
-                                </div>
-                            </div>
-                        </div>
-
                         <button type="submit" class="btn btn-primary">Save Settings</button>
                     </form>
                 </div>
