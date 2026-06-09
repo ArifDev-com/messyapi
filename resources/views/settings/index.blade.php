@@ -29,7 +29,7 @@
                                 <label for="ai_instruction">
                                     Describe and Instruct the AI.
                                 </label>
-                                <textarea rows="10" class="form-control" id="ai_instruction" name="ai_instruction"
+                                <textarea rows="10" class="form-control" id="ai_instruction" name="ai_instruction" required
                                 >{!! old('ai_instruction', $settings->where('key', 'ai_instruction')->first()?->value) !!}</textarea>
                             </div>
                         </div>
