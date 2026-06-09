@@ -13,6 +13,32 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
+                    <h5>AI Bot Instruction</h5>
+                </div>
+                <div class="card-body">
+                    @if(session('success'))
+                        <div class="alert alert-success">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('settings.update') }}">
+                        @csrf
+                        <div class="">
+                            <div class="form-group">
+                                <label for="ai_instruction">
+                                    Describe and Instruct the AI.
+                                </label>
+                                <textarea rows="10" class="form-control" id="ai_instruction" name="ai_instruction"
+                                >{!! old('ai_instruction', $settings->where('key', 'ai_instruction')->first()?->value) !!}</textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">
                     <h5>API Configurations</h5>
                 </div>
                 <div class="card-body">

@@ -32,7 +32,17 @@ class SettingsController extends Controller
             'whatsapp_phone_number_id' => 'nullable|string',
             'openai_api_url' => 'nullable|string',
             'openai_api_model' => 'nullable|string',
+            'ai_instruction' => 'nullable|string',
         ]);
+
+        if($request->ai_instruction) {
+            $k = 'ai_instruction';
+            Setting::where('key', $k)->delete();
+            Setting::create([
+                'key' => $k, 'value' => $request->ai_instruction,
+            ]);
+            return back()->with('success', 'AI updated successfully.');
+        }
 
         foreach([
             'openai_api_key' => $request->openai_api_key,

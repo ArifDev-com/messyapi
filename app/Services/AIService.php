@@ -219,7 +219,10 @@ Policies:
 5. once an order is confirmed by any text confirmation (not just "Confirm" text, anything with same meaning), just return the json data of the order in properly formatted structure so that our algorithm can process it and send the order.
 6. Do not ask multiple questions at a time.
 7. If a customer messages after a order is placed, treat him as new customer to get new order.
-        ';
+
+SPECIAL INSTRUCTIONS FROM COMPANY:
+
+        ' . (Setting::where('key', 'ai_instruction')->first()?->value ?: '');
 
         return $into;
     }
