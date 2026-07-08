@@ -108,6 +108,7 @@ class SidecarManager
             'SESSION_DIR' => $this->sessionDir(),
             'SIDECAR_PID_FILE' => $this->pidFile(),
             'PATH' => getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin',
+            'WHATSAPP_PERSIST_INCOMING' => 'true',
         ];
 
         $envExports = '';
@@ -161,7 +162,6 @@ class SidecarManager
             @unlink($pidFile);
             throw new SidecarException('Failed to spawn sidecar process (no PID written).');
         }
-
         return $pid;
     }
 

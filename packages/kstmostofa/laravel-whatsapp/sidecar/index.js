@@ -18,7 +18,7 @@ const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js')
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
 const TOKEN = process.env.SIDECAR_TOKEN || '';
-const SESSION_DIR = process.env.SESSION_DIR || path.join(__dirname, 'sessions');
+const SESSION_DIR = path.join(__dirname, 'sessions');
 const PID_FILE = process.env.SIDECAR_PID_FILE || '';
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
@@ -581,8 +581,9 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: err.message || 'internal error' });
 });
 
-const server = app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, async () => {
   console.log(`[laravel-wa-sidecar] listening on http://${HOST}:${PORT}`);
+  await bootSession('main');
 });
 
 function shutdown(signal) {
