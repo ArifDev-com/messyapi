@@ -175,6 +175,8 @@ async function bootSession(sessionId) {
   // /start to return immediately so the caller can poll for QR.
   client.initialize().catch((e) => {
     session.status = 'error';
+    session.error = e.message;
+    sessions.set(sessionId, session);
     broadcast(sessionId, 'error', { message: e.message });
   });
 
@@ -569,7 +571,7 @@ app.get('/sessions/:id/events', (req, res, next) => {
       'X-Accel-Buffering': 'no',
     });
     res.flushHeaders();
-    res.write(`event: hello\ndata: ${JSON.stringify({ sessionId: req.params.id, status: s.status })}\n\n`);
+    res.write(`event: hello\ndata: ${JSON.stringify({ sessionId: req.params.id, status: s.status, error: s.error || '' })}\n\n`);
     s.subscribers.add(res);
     req.on('close', () => s.subscribers.delete(res));
   } catch (e) { next(e); }
