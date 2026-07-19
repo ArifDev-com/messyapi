@@ -8,8 +8,20 @@ const fs = require('fs');
 const SERVER_URL = 'http://127.0.0.1:3000';
 const TOKEN = '';
 
-// Hide Electron from dock
-app.dock.hide();
+function getChromePath() {
+  switch (process.platform) {
+    case 'darwin':
+      return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    case 'win32':
+      return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    case 'linux':
+      return '/usr/bin/google-chrome';
+    default:
+      throw new Error('Unsupported platform');
+  }
+}
+
+app.dock?.hide(); // macOS only
 
 app.on('ready', async () => {
   const sessionPath = path.join(app.getPath('userData'), 'whatsapp-session');
@@ -30,12 +42,11 @@ app.on('ready', async () => {
     });
   }
 
-  const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
+  const chrome = spawn(getChromePath(), [
     `--user-data-dir=${sessionPath}`,
     '--app=https://web.whatsapp.com',
     '--no-first-run',
-    '--no-default-browser-check',
-    '--new-window'  // Prevents opening in existing Chrome window
+    '--no-default-browser-check'
   ]);
 
   chrome.on('close', () => {
