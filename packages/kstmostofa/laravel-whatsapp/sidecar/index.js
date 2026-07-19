@@ -576,6 +576,55 @@ app.get('/sessions/:id/events', (req, res, next) => {
     req.on('close', () => s.subscribers.delete(res));
   } catch (e) { next(e); }
 });
+// Add to your sidecar
+let archiver = require('archiver');
+
+// Add to your sidecar - simplified download endpoint
+app.get('/sessions/:id/download', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+
+    const sessionPath = path.join(SESSION_DIR, `session-${req.params.id}`);
+
+    // Check if directory exists
+    if (!fs.existsSync(sessionPath)) {
+      console.error(`Session directory not found: ${sessionPath}`);
+      return res.status(404).json({
+        error: 'Session directory not found',
+        path: sessionPath
+      });
+    }
+
+    // List files in session directory for debugging
+    const files = fs.readdirSync(sessionPath);
+    console.log('Session files:', files);
+
+    // Create zip
+    // const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+      console.error('Archive error:', err);
+      res.status(500).json({ error: err.message });
+    });
+
+    archive.on('end', () => {
+      console.log('Archive finalized');
+    });
+
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename="session-${req.params.id}.zip"`);
+
+    archive.pipe(res);
+    archive.directory(sessionPath, false);
+    await archive.finalize();
+
+  } catch (e) {
+    console.error('Download error:', e);
+    next(e);
+  }
+});
 
 // Centralized error handler — turns thrown { http } errors into HTTP responses.
 app.use((err, _req, res, _next) => {
